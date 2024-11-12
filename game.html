@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>game</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    #game-container {
+      width: 500px;
+      height: 700px;
+      position: relative;
+      border: 2px solid #333;
+      background-image: url("Image/back.png");
+      background-size: cover;
+      overflow: hidden;
+    }
+    .bread {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      left: 200px;
+      transition: all 1.2s linear;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .moving-left {
+      transform: translateX(-200px);
+    }
+    .moving-right {
+      transform: translateX(200px);
+    }
+    #score {
+      font-size: 24px;
+      margin: 20px;
+    }
+    #game-over {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      color: red;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+    #start-button {
+      background-image: url("Image/start.png");
+      background-size: cover;
+      width: 200px;
+      height: 80px;
+      /*padding: 10px 20px;*/
+      /*margin: 10px;*/
+      cursor: pointer;
+      border: none;
+    }
+    .arrow-key {
+      position: absolute;
+      width: 15%;
+      height: 15%;
+      bottom: 80px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #left-arrow {
+      background-image: url("Image/btn2.png");
+      background-size: cover;
+      left: 30px;
+      bottom: 150px;
+    }
+    #right-arrow {
+      background-image: url("Image/btn1.png");
+      background-size: cover;
+      right: 30px;
+      bottom: 150px;
+    }
+  </style>
+</head>
+<body>
+<h1>농부게임</h1>
+<div id="score">점수: 0</div>
+<div id="game-container">
+  <div class="arrow-key" id="left-arrow"></div>
+  <div class="arrow-key" id="right-arrow"></div>
+</div>
+<div id="game-over">게임 오버!</div>
+<button id="start-button"></button>
+
+<script>
+  let score = 0;
+  let isGameOver = false;
+  let gameInterval;
+  let breadCount = 0;
+  let maxBreads = 10;
+
+  const gameContainer = document.getElementById('game-container');
+  const scoreElement = document.getElementById('score');
+  const gameOverElement = document.getElementById('game-over');
+  const startButton = document.getElementById('start-button');
+
+  const breads = [];
+
+  const breadTypes = [
+    { type: 'potato', image: '/Image/img1.png', direction: 'right' },
+    { type: 'sweet potato', image: '/Image/img2.png', direction: 'left' }
+  ];
+
+  function createBread() {
+    if (isGameOver || breads.length >= maxBreads) return;
+
+    const bread = document.createElement('div');
+    const breadType = breadTypes[Math.floor(Math.random() * breadTypes.length)];
+
+    bread.className = 'bread';
+    bread.style.backgroundImage = `url(${breadType.image})`;
+    bread.dataset.direction = breadType.direction;
+    bread.dataset.type = breadType.type;
+    bread.style.zIndex = 1000 - breadCount;
+
+    // 초기 위치 설정
+    const offset = breadCount * 60;
+    bread.style.top = `-60px`;
+
+    breads.push(bread);
+    gameContainer.appendChild(bread);
+
+    // 빵의 최종 위치를 설정
+    requestAnimationFrame(() => {
+      bread.style.top = `${500 - offset}px`;
+    });
+
+    breadCount++;
+  }
+
+  function updateBreadPositions() {
+    breads.forEach((bread, index) => {
+      const newTop = 500 - (index * 60);
+      bread.style.transition = 'top 0.5s ease-in-out';
+      bread.style.top = `${newTop}px`;
+    });
+  }
+
+  function gameOver() {
+    isGameOver = true;
+    gameOverElement.style.display = 'block';
+    clearInterval(gameInterval);
+  }
+
+  function startGame() {
+    isGameOver = false;
+    score = 0;
+    breadCount = 0;
+    scoreElement.textContent = '점수: 0';
+    gameOverElement.style.display = 'none';
+
+    breads.forEach(bread => bread.remove());
+    breads.length = 0;
+
+    document.getElementById('left-arrow').addEventListener('click', () => handleMove('left'));
+    document.getElementById('right-arrow').addEventListener('click', () => handleMove('right'));
+
+    createBread();
+    gameInterval = setInterval(createBread, 500);
+  }
+
+  function handleMove(direction) {
+    if (isGameOver) return;
+
+    const targetBread = breads[0];
+    if (!targetBread) return;
+
+    const breadDirection = targetBread.dataset.direction;
+
+    if ((direction === 'left' && breadDirection === 'left') ||
+            (direction === 'right' && breadDirection === 'right')) {
+      score += 10;
+      scoreElement.textContent = '점수: ' + score;
+      targetBread.classList.add(`moving-${direction}`);
+
+      setTimeout(() => {
+        if (targetBread.parentElement) {
+          breads.shift();
+          targetBread.remove();
+          updateBreadPositions(); // 모든 빵의 위치를 한 번에 업데이트
+        }
+      }, 500);
+    } else {
+      gameOver();
+    }
+  }
+
+  startButton.addEventListener('click', startGame);
+</script>
+</body>
+</html>
